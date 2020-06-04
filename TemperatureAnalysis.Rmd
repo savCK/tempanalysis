@@ -1,0 +1,187 @@
+---
+title: "Temperature Analysis"
+output: html_document
+---
+### Basic plots
+**First**, graphics are produced (like Dakotah's) which plot the data for *summer temperature* (maximum, mean, and minimum) and *summer heat index* (maximum, mean, and minimum) for each *residence bin* (short-term, medium-term, and long-term residents).
+```{r setup, include=FALSE}
+library(ggplot2)
+library(gridExtra)
+library(data.table)
+library(tidyverse)
+DailyMaxDF <- read_csv(file = '~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/DailyMaxDF.csv')
+max <- data.table(DailyMaxDF)
+bin1_jja_maxT <- max %>% subset(Year >= 1957)
+bin2_jja_maxT <- max %>% subset(Year >= 1982)
+bin3_jja_maxT <- max %>% subset(Year >= 2005)
+DailyMeanDF <- read_csv(file = '~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/DailyMeanDF.csv')
+mean <- data.table(DailyMeanDF)
+bin1_jja_meanT <- mean %>% subset(Year >= 1957)
+bin2_jja_meanT <- mean %>% subset(Year >= 1982)
+bin3_jja_meanT <- mean %>% subset(Year >= 2005)
+DailyMinDF <- read_csv(file = '~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/DailyMinDF.csv')
+min <- data.table(DailyMinDF)
+bin1_jja_minT <- min %>% subset(Year >= 1957)
+bin2_jja_minT <- min %>% subset(Year >= 1982)
+bin3_jja_minT <- min %>% subset(Year >= 2005)
+```
+
+##### **Short-term residents**
+```{r bin 3 plots code, include=FALSE}
+b3_jja_maxT <- ggplot(bin3_jja_maxT, aes(Year, MaxDailyTemperature, colour = Month)) +
+  geom_point(size = 0.5, alpha = 3/10) +
+  geom_smooth(method = "loess", colour = "grey30", lwd = 0.8) +
+  labs(title = "Monthly Maximum Temperature 2005-2016", y = "Maximum daily temperature") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))
+  ) + theme(text = element_text(size = 5, family = "Garamond")) + scale_color_gradient(low="orangered", high="red4") + theme(legend.position="none")
+three <- plot(b3_jja_maxT)
+b3_jja_meanT <- ggplot(bin3_jja_meanT, aes(Year, MeanDailyTemperature, colour = Month)) +
+  geom_point(size = 0.5, alpha = 3/10) +
+  geom_smooth(method = "loess", colour = "grey30", lwd = 0.8) +
+  labs(title = "Monthly Mean Temperature 2005-2016", y = "Mean daily temperature") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))
+  ) + theme(text = element_text(size = 5, family = "Garamond")) + scale_color_gradient(low="orangered", high="red4") + theme(legend.position="none")
+six <- plot(b3_jja_meanT)
+b3_jja_minT <- ggplot(bin3_jja_minT, aes(Year, MinDailyTemperature, colour = Month)) +
+  geom_point(size = 0.5, alpha = 3/10) +
+  geom_smooth(method = "loess", colour = "grey30", lwd = 0.8) +
+  labs(title = "Monthly Minimum Temperature 2005-2016", y = "Minimum daily temperature") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))
+  ) + theme(text = element_text(size = 5, family = "Garamond")) + scale_color_gradient(low="orangered", high="red4") + theme(legend.position="none")
+nine <- plot(b3_jja_minT)
+b3_jja_maxHI <- ggplot(bin3_jja_maxT, aes(Year, MaxDailyHeatIndex, colour = Month)) +
+  geom_point(size = 0.5, alpha = 3/10) +
+  geom_smooth(method = "loess", colour = "grey30", lwd = 0.8) +
+  labs(title = "Monthly Maximum Heat Index 2005-2016", y = "Maximum heat index") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))
+  ) + theme(text = element_text(size = 5, family = "Garamond")) + scale_color_gradient(low="violetred1", high="deeppink4") + theme(legend.position="none")
+twelve <- plot(b3_jja_maxHI)
+b3_jja_meanHI <- ggplot(bin3_jja_meanT, aes(Year, MeanDailyHeatIndex, colour = Month)) +
+  geom_point(size = 0.5, alpha = 3/10) +
+  geom_smooth(method = "loess", colour = "grey30", lwd = 0.8) +
+  labs(title = "Monthly Mean Heat Index 2005-2016", y = "Mean heat index") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))
+  ) + theme(text = element_text(size = 5, family = "Garamond")) + scale_color_gradient(low="violetred1", high="deeppink4") + theme(legend.position="none")
+fifteen <- plot(b3_jja_meanHI)
+b3_jja_minHI <- ggplot(bin3_jja_minT, aes(Year, MinDailyHeatIndex, colour = Month)) +
+  geom_point(size = 0.5, alpha = 3/10) +
+  geom_smooth(method = "loess", colour = "grey30", lwd = 0.8) +
+  labs(title = "Monthly Minimum Heat Index 2005-2016", y = "Minimum heat index") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))
+  ) + theme(text = element_text(size = 5, family = "Garamond")) + scale_color_gradient(low="violetred1", high="deeppink4") + theme(legend.position="none")
+eighteen <- plot(b3_jja_minHI)
+```
+```{r bin 3 plots T, fig.height = 2.5, fig.width = 7.5, echo=FALSE}
+grid.arrange(three, six, nine, nrow = 1)
+```
+```{r bin 3 plots HI, fig.height = 2.5, fig.width = 7.5, echo=FALSE}
+grid.arrange(twelve, fifteen, eighteen, nrow = 1)
+```
+
+
+##### **Medium-term residents**
+```{r bin 2 plots code, include=FALSE}
+b2_jja_maxT <- ggplot(bin2_jja_maxT, aes(Year, MaxDailyTemperature, colour = Month)) +
+  geom_point(size = 0.5, alpha = 3/10) +
+  geom_smooth(method = "loess", colour = "grey30", lwd = 0.8) +
+  labs(title = "Monthly Maximum Temperature 1982-2016", y = "Maximum daily temperature") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))
+  ) + theme(text = element_text(size = 5, family = "Garamond")) + scale_color_gradient(low="orangered", high="red4") + theme(legend.position="none")
+two <- plot(b2_jja_maxT)
+b2_jja_meanT <- ggplot(bin2_jja_meanT, aes(Year, MeanDailyTemperature, colour = Month)) +
+  geom_point(size = 0.5, alpha = 3/10) +
+  geom_smooth(method = "loess", colour = "grey30", lwd = 0.8) +
+  labs(title = "Monthly Mean Temperature 1982-2016", y = "Mean daily temperature") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))
+  ) + theme(text = element_text(size = 5, family = "Garamond")) + scale_color_gradient(low="orangered", high="red4") + theme(legend.position="none")
+five <- plot(b2_jja_meanT)
+b2_jja_minT <- ggplot(bin2_jja_minT, aes(Year, MinDailyTemperature, colour = Month)) +
+  geom_point(size = 0.5, alpha = 3/10) +
+  geom_smooth(method = "loess", colour = "grey30", lwd = 0.8) +
+  labs(title = "Monthly Minimum Temperature 1982-2016", y = "Minimum daily temperature") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))
+  ) + theme(text = element_text(size = 5, family = "Garamond")) + scale_color_gradient(low="orangered", high="red4") + theme(legend.position="none")
+eight <- plot(b2_jja_minT)
+b2_jja_maxHI <- ggplot(bin2_jja_maxT, aes(Year, MaxDailyHeatIndex, colour = Month)) +
+  geom_point(size = 0.5, alpha = 3/10) +
+  geom_smooth(method = "loess", colour = "grey30", lwd = 0.8) +
+  labs(title = "Monthly Maximum Heat Index 1982-2016", y = "Maximum heat index") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))
+  ) + theme(text = element_text(size = 5, family = "Garamond")) + scale_color_gradient(low="violetred1", high="deeppink4") + theme(legend.position="none")
+eleven <- plot(b2_jja_maxHI)
+b2_jja_meanHI <- ggplot(bin2_jja_meanT, aes(Year, MeanDailyHeatIndex, colour = Month)) +
+  geom_point(size = 0.5, alpha = 3/10) +
+  geom_smooth(method = "loess", colour = "grey30", lwd = 0.8) +
+  labs(title = "Monthly Mean Heat Index 1982-2016", y = "Mean heat index") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))
+  ) + theme(text = element_text(size = 5, family = "Garamond")) + scale_color_gradient(low="violetred1", high="deeppink4") + theme(legend.position="none")
+fourteen <- plot(b2_jja_meanHI)
+b2_jja_minHI <- ggplot(bin2_jja_minT, aes(Year, MinDailyHeatIndex, colour = Month)) +
+  geom_point(size = 0.5, alpha = 3/10) +
+  geom_smooth(method = "loess", colour = "grey30", lwd = 0.8) +
+  labs(title = "Monthly Minimum Heat Index 1982-2016", y = "Minimum heat index") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))
+  ) + theme(text = element_text(size = 5, family = "Garamond")) + scale_color_gradient(low="violetred1", high="deeppink4") + theme(legend.position="none")
+seventeen <- plot(b2_jja_minHI)
+```
+```{r bin 2 plots T, fig.height = 2.5, fig.width = 7.5, echo=FALSE}
+grid.arrange(two, five, eight, nrow = 1)
+```
+```{r bin 2 plots HI, fig.height = 2.5, fig.width = 7.5, echo=FALSE}
+grid.arrange(eleven, fourteen, seventeen, nrow = 1)
+```
+
+##### **Long-term residents**
+```{r bin 1 plots code, include=FALSE}
+b1_jja_maxT <- ggplot(bin1_jja_maxT, aes(Year, MaxDailyTemperature, colour = Month)) +
+  geom_point(size = 0.5, alpha = 3/10) +
+  geom_smooth(method = "loess", colour = "grey30", lwd = 0.8) +
+  labs(title = "Monthly Maximum Temperature 1957-2016", y = "Maximum daily temperature") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))
+) + theme(text = element_text(size = 5, family = "Garamond")) + scale_color_gradient(low="orangered", high="red4") + theme(legend.position="none")
+one <- plot(b1_jja_maxT)
+b1_jja_meanT <- ggplot(bin1_jja_meanT, aes(Year, MeanDailyTemperature, colour = Month)) +
+  geom_point(size = 0.5, alpha = 3/10) +
+  geom_smooth(method = "loess", colour = "grey30", lwd = 0.8) +
+  labs(title = "Monthly Mean Temperature 1957-2016", y = "Mean daily temperature") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))
+  ) + theme(text = element_text(size = 5, family = "Garamond")) + scale_color_gradient(low="orangered", high="red4") + theme(legend.position="none")
+four <- plot(b1_jja_meanT)
+b1_jja_minT <- ggplot(bin1_jja_minT, aes(Year, MinDailyTemperature, colour = Month)) +
+  geom_point(size = 0.5, alpha = 3/10) +
+  geom_smooth(method = "loess", colour = "grey30", lwd = 0.8) +
+  labs(title = "Monthly Minimum Temperature 1957-2016", y = "Minimum daily temperature") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))
+  ) + theme(text = element_text(size = 5, family = "Garamond")) + scale_color_gradient(low="orangered", high="red4") + theme(legend.position="none")
+seven <- plot(b1_jja_minT)
+b1_jja_maxHI <- ggplot(bin1_jja_maxT, aes(Year, MaxDailyHeatIndex, colour = Month)) +
+  geom_point(size = 0.5, alpha = 3/10) +
+  geom_smooth(method = "loess", colour = "grey30", lwd = 0.8) +
+  labs(title = "Monthly Maximum Heat Index 1957-2016", y = "Maximum heat index") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))
+  ) + theme(text = element_text(size = 5, family = "Garamond")) + scale_color_gradient(low="violetred1", high="deeppink4") + theme(legend.position="none")
+ten <- plot(b1_jja_maxHI)
+b1_jja_meanHI <- ggplot(bin1_jja_meanT, aes(Year, MeanDailyHeatIndex, colour = Month)) +
+  geom_point(size = 0.5, alpha = 3/10) +
+  geom_smooth(method = "loess", colour = "grey30", lwd = 0.8) +
+  labs(title = "Monthly Mean Heat Index 1957-2016", y = "Mean heat index") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))
+  ) + theme(text = element_text(size = 5, family = "Garamond")) + scale_color_gradient(low="violetred1", high="deeppink4") + theme(legend.position="none")
+thirteen <- plot(b1_jja_meanHI)
+b1_jja_minHI <- ggplot(bin1_jja_minT, aes(Year, MinDailyHeatIndex, colour = Month)) +
+  geom_point(size = 0.5, alpha = 3/10) +
+  geom_smooth(method = "loess", colour = "grey30", lwd = 0.8) +
+  labs(title = "Monthly Minimum Heat Index 1957-2016", y = "Minimum heat index") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))
+  ) + theme(text = element_text(size = 5, family = "Garamond")) + scale_color_gradient(low="violetred1", high="deeppink4") + theme(legend.position="none")
+sixteen <- plot(b1_jja_minHI)
+```
+```{r bin 1 plots T, fig.height = 2.5, fig.width = 7.5, echo=FALSE}
+grid.arrange(one, four, seven, nrow = 1)
+```
+```{r bin 1 plots HI, fig.height = 2.5, fig.width = 7.5, echo=FALSE}
+grid.arrange(ten, thirteen, sixteen, nrow = 1)
+```
+
+
+
