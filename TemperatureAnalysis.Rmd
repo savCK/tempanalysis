@@ -71,10 +71,10 @@ b3_jja_minHI <- ggplot(bin3_jja_minT, aes(Year, MinDailyHeatIndex, colour = Mont
   ) + theme(text = element_text(size = 5, family = "Garamond")) + scale_color_gradient(low="violetred1", high="deeppink4") + theme(legend.position="none")
 eighteen <- plot(b3_jja_minHI)
 ```
-```{r bin 3 plots T, fig.height = 2.5, fig.width = 7.5, echo=FALSE}
+```{r bin 3 plots T, fig.height = 4.5, fig.width = 10.5, echo=FALSE}
 grid.arrange(three, six, nine, nrow = 1)
 ```
-```{r bin 3 plots HI, fig.height = 2.5, fig.width = 7.5, echo=FALSE}
+```{r bin 3 plots HI, fig.height = 4.5, fig.width = 10.5, echo=FALSE}
 grid.arrange(twelve, fifteen, eighteen, nrow = 1)
 ```
 
@@ -124,10 +124,10 @@ b2_jja_minHI <- ggplot(bin2_jja_minT, aes(Year, MinDailyHeatIndex, colour = Mont
   ) + theme(text = element_text(size = 5, family = "Garamond")) + scale_color_gradient(low="violetred1", high="deeppink4") + theme(legend.position="none")
 seventeen <- plot(b2_jja_minHI)
 ```
-```{r bin 2 plots T, fig.height = 2.5, fig.width = 7.5, echo=FALSE}
+```{r bin 2 plots T, fig.height = 4.5, fig.width = 10.5, echo=FALSE}
 grid.arrange(two, five, eight, nrow = 1)
 ```
-```{r bin 2 plots HI, fig.height = 2.5, fig.width = 7.5, echo=FALSE}
+```{r bin 2 plots HI, fig.height = 4.5, fig.width = 10.5, echo=FALSE}
 grid.arrange(eleven, fourteen, seventeen, nrow = 1)
 ```
 
@@ -176,10 +176,10 @@ b1_jja_minHI <- ggplot(bin1_jja_minT, aes(Year, MinDailyHeatIndex, colour = Mont
   ) + theme(text = element_text(size = 5, family = "Garamond")) + scale_color_gradient(low="violetred1", high="deeppink4") + theme(legend.position="none")
 sixteen <- plot(b1_jja_minHI)
 ```
-```{r bin 1 plots T, fig.height = 2.5, fig.width = 7.5, echo=FALSE}
+```{r bin 1 plots T, fig.height = 4.5, fig.width = 10.5, echo=FALSE}
 grid.arrange(one, four, seven, nrow = 1)
 ```
-```{r bin 1 plots HI, fig.height = 2.5, fig.width = 7.5, echo=FALSE}
+```{r bin 1 plots HI, fig.height = 4.5, fig.width = 10.5, echo=FALSE}
 grid.arrange(ten, thirteen, sixteen, nrow = 1)
 ```
 
