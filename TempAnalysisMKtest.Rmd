@@ -1,10 +1,7 @@
 ---
-title: "Temperature Analysis"
-author: "*(continued)*"
+title: "Mann-Kendall Trend Test"
 output: html_document
 ---
-#### 
-#### **Mann-Kendall Trend Test**
 ```{r setup, include=FALSE}
 library(Kendall)
 library(trend)
@@ -99,14 +96,57 @@ library(knitr)
 library(kableExtra)
 mktemps <- read_csv(file = '~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/summertemps/mktemps.csv')
 ```
+
 ```{r include=FALSE}
-mktab <- data.frame(mktemps)
-opts <- options(knitr.kable.NA = "")
+mktab <- data.table(mktemps)
 mk <- mktab %>%
-  kable(digits = c(4,3,3,3,6), align = "llccr", col.names = c("Residence bin", "Variable", "Kendall $\\tau$", "$p$ value", "Theil Sen slope"), escape = FALSE) %>%
-  kable_styling(bootstrap_options = c("striped", "condensed", "responsive", full_width = F))
+  kable(digits = c(0,4,3,3,3,6), align = "lllccr", col.names = c("", "Residence bin", "Variable", "Kendall $\\tau$", "$p$ value", "Theil Sen slope"), escape = FALSE) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed", "responsive", "bordered", full_width = F))
+mk_short <- mktab %>% filter(X <= 6)
+mk_medium <- mktab %>% filter(X >= 7 & X <= 12)
+mk_long <- mktab %>% filter(X >= 13)
+```
+
+### **Short-term Residents** *(2005-2016)*
+```{r include=FALSE}
+library(dplyr)
+opts <- options(knitr.kable.NA = "")
+mk_s <- mk_short[2:6]
+mk3 <- mk_s %>%
+  mutate(p_value=cell_spec(p_value, "html", bold = ifelse(p_value < 0.05, T, F))) %>%
+  kable(digits = c(4,3,3,2,6), align = "llccr", col.names = c("Residence bin", "Variable", "Kendall $\\tau$", "$p$ value", "Theil Sen slope"), escape = FALSE) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed", "responsive", "bordered", "hover", font_size=10, full_width = F))
 ```
 ```{r echo=FALSE}
-row_spec(mk, 1:6, hline_after = T)
+column_spec(mk3, 1:1, bold = TRUE)
 ```
+
+### **Medium-term Residents** *(1982-2016)*
+```{r include=FALSE}
+opts <- options(knitr.kable.NA = "")
+mk_m <- mk_medium[2:6]
+mk2 <- mk_m %>%
+  mutate(p_value=cell_spec(p_value, "html", bold = ifelse(p_value < 0.05, T, F))) %>%
+  kable(digits = c(4,3,3,2,6), align = "llccr", col.names = c("Residence bin", "Variable", "Kendall $\\tau$", "$p$ value", "Theil Sen slope"), escape = FALSE) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed", "responsive", "bordered", "hover", font_size=10, full_width = F))
+```
+```{r echo=FALSE}
+column_spec(mk2, 1:1, bold = TRUE)
+```
+
+### **Long-term Residents** *(1957-2016)*
+```{r include=FALSE}
+opts <- options(knitr.kable.NA = "")
+mk_l <- mk_long[2:6]
+mk1 <- mk_l %>%
+  mutate(p_value=cell_spec(p_value, "html", bold = ifelse(p_value < 0.05, T, F))) %>%
+  kable(digits = c(4,3,3,2,6), align = "llccr", col.names = c("Residence bin", "Variable", "Kendall $\\tau$", "$p$ value", "Theil Sen slope"), escape = FALSE) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed", "responsive", "bordered", "hover", font_size=10, full_width = F))
+```
+```{r echo=FALSE}
+column_spec(mk1, 1:1, bold = TRUE)
+```
+
+
+
 
