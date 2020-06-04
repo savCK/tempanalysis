@@ -1,0 +1,112 @@
+---
+title: "Temperature Analysis"
+author: "*(continued)*"
+output: html_document
+---
+#### 
+#### **Mann-Kendall Trend Test**
+```{r setup, include=FALSE}
+library(Kendall)
+library(trend)
+library(mkac)
+library(data.table)
+library(ggplot2)
+library(tidyverse)
+library(knitr)
+DailyMaxDF <- read_csv(file = '~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/DailyMaxDF.csv')
+max <- data.table(DailyMaxDF)
+bin1_jja_maxT <- max %>% subset(Year >= 1957)
+bin2_jja_maxT <- max %>% subset(Year >= 1982)
+bin3_jja_maxT <- max %>% subset(Year >= 2005)
+DailyMeanDF <- read_csv(file = '~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/DailyMeanDF.csv')
+mean <- data.table(DailyMeanDF)
+bin1_jja_meanT <- mean %>% subset(Year >= 1957)
+bin2_jja_meanT <- mean %>% subset(Year >= 1982)
+bin3_jja_meanT <- mean %>% subset(Year >= 2005)
+DailyMinDF <- read_csv(file = '~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/DailyMinDF.csv')
+min <- data.table(DailyMinDF)
+bin1_jja_minT <- min %>% subset(Year >= 1957)
+bin2_jja_minT <- min %>% subset(Year >= 1982)
+bin3_jja_minT <- min %>% subset(Year >= 2005)
+```
+```{r include=FALSE}
+##### **Short-term residents**
+# Max Temp
+MannKendall(bin3_jja_maxT$MaxDailyTemperature)
+theil_sen_slope(bin3_jja_maxT$MaxDailyTemperature)
+# Mean Temp
+MannKendall(bin3_jja_meanT$MeanDailyTemperature)
+theil_sen_slope(bin3_jja_meanT$MeanDailyTemperature)
+# Min Temp
+MannKendall(bin3_jja_minT$MinDailyTemperature)
+theil_sen_slope(bin3_jja_minT$MinDailyTemperature)
+# Max HI
+MannKendall(bin3_jja_maxT$MaxDailyHeatIndex)
+theil_sen_slope(bin3_jja_maxT$MaxDailyHeatIndex)
+# Mean HI
+MannKendall(bin3_jja_meanT$MeanDailyHeatIndex)
+theil_sen_slope(bin3_jja_meanT$MeanDailyHeatIndex)
+# Min HI
+MannKendall(bin3_jja_minT$MinDailyHeatIndex)
+theil_sen_slope(bin3_jja_minT$MinDailyHeatIndex)
+```
+```{r include=FALSE}
+##### **Medium-term residents**
+# Max Temp
+MannKendall(bin2_jja_maxT$MaxDailyTemperature)
+theil_sen_slope(bin2_jja_maxT$MaxDailyTemperature)
+# Mean Temp
+MannKendall(bin2_jja_meanT$MeanDailyTemperature)
+theil_sen_slope(bin2_jja_meanT$MeanDailyTemperature)
+# Min Temp
+MannKendall(bin2_jja_minT$MinDailyTemperature)
+theil_sen_slope(bin2_jja_minT$MinDailyTemperature)
+# Max HI
+MannKendall(bin2_jja_maxT$MaxDailyHeatIndex)
+theil_sen_slope(bin2_jja_maxT$MaxDailyHeatIndex)
+# Mean HI
+MannKendall(bin2_jja_meanT$MeanDailyHeatIndex)
+theil_sen_slope(bin2_jja_meanT$MeanDailyHeatIndex)
+# Min HI
+MannKendall(bin2_jja_minT$MinDailyHeatIndex)
+theil_sen_slope(bin2_jja_minT$MinDailyHeatIndex)
+```
+```{r include=FALSE}
+##### **Long-term residents**
+# Max Temp
+MannKendall(bin1_jja_maxT$MaxDailyTemperature)
+theil_sen_slope(bin1_jja_maxT$MaxDailyTemperature)
+# Mean Temp
+MannKendall(bin1_jja_meanT$MeanDailyTemperature)
+theil_sen_slope(bin1_jja_meanT$MeanDailyTemperature)
+# Min Temp
+MannKendall(bin1_jja_minT$MinDailyTemperature)
+theil_sen_slope(bin1_jja_minT$MinDailyTemperature)
+# Max HI
+MannKendall(bin1_jja_maxT$MaxDailyHeatIndex)
+theil_sen_slope(bin1_jja_maxT$MaxDailyHeatIndex)
+# Mean HI
+MannKendall(bin1_jja_meanT$MeanDailyHeatIndex)
+theil_sen_slope(bin1_jja_meanT$MeanDailyHeatIndex)
+# Min HI
+MannKendall(bin1_jja_minT$MinDailyHeatIndex)
+theil_sen_slope(bin1_jja_minT$MinDailyHeatIndex)
+```
+```{r include=FALSE}
+library(data.table)
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+mktemps <- read_csv(file = '~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/summertemps/mktemps.csv')
+```
+```{r include=FALSE}
+mktab <- data.frame(mktemps)
+opts <- options(knitr.kable.NA = "")
+mk <- mktab %>%
+  kable(digits = c(4,3,3,3,6), align = "llccr", col.names = c("Residence bin", "Variable", "Kendall $\\tau$", "$p$ value", "Theil Sen slope"), escape = FALSE) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed", "responsive", full_width = F))
+```
+```{r echo=FALSE}
+row_spec(mk, 1:6, hline_after = T)
+```
+
