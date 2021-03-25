@@ -1,0 +1,1295 @@
+---
+title: "**Climate Trend Analysis**"
+subtitle: "Knoxville, TN"
+output: 
+  prettydoc::html_pretty:
+    theme: leonids
+    toc: true
+    toc_depth: 3
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(dev.args = list(type = "cairo"))
+```
+
+<style type="text/css">
+.main-container {
+  max-width: 1800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+```{r package inport, include=FALSE}
+
+library(prettydoc)
+library(ggplot2)
+library(gridExtra)
+library(data.table)
+library(tidyverse)
+library(gganimate)
+library(transformr)
+library(gifski)
+library(MASS)
+library(pscl)
+library(densityClust)
+library(mclust)
+library(jcolors)
+library(Kendall)
+library(trend)
+library(mkac)
+library(stargazer)
+library(knitr)
+library(dplyr)
+library(kableExtra)
+library(zyp)
+library(boot)
+library(mblm)
+library(EnvStats)
+library(rkt)
+library(deming)
+library(grid)
+library(lattice)
+library(htmltools)
+library(EnvStats)
+library(modifiedmk)
+library(rkt)
+library(stats)
+library(WRS)
+
+```
+<br> 
+
+<h2 style="text-align:center">**Daily and Monthly Climate Data**</h2>
+
+#### **Locally weighted smoothing**
+<p style="font-size:14px">A nonparametric locally-weighted (loess) regression was used to measure changes in daily temperature values for each residence bin to illustrate potential trends over the three specified periods. Loess method is nonparametric because assumptions have not been made about the distribution of the data. The analysis incorporates a smoothing procedure to produce a trendline of the distribution, which compares the distance of individual data points to the overall mean of the dataset. The resulting trendline can indicate whether distinct changes (increases or decreases) are visible overall in the dataset, as well as whether the loess function is overfitting the data. Scatterplots were produced to reflect statistical aspects (maximum, mean, and minimum) of the climate variables. The climate variables examined in this study were summer temperature (June-July-August), summer heat index (JJA), and winter temperature (December-January-February). Overall, nine (9) climate variables were assessed for each of the three (3) Knoxville residence bins.</p>
+```{r data input for plots, include=FALSE}
+### All Data ###
+Geog_634_TempRHFZ_data_Version2 <- read_csv(file = '~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/summertemps/Geog_634_TempRHFZ_data_Version2.csv')
+alldata <- data.frame(Geog_634_TempRHFZ_data_Version2)
+
+## Summer Tmax/HImax ##
+DailyMaxDF <- read_csv(file = '~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/DailyMaxDF.csv')
+max <- data.table(DailyMaxDF)
+bin1_jja_maxT <- max %>% subset(Year >= 1957)
+bin2_jja_maxT <- max %>% subset(Year >= 1982)
+bin3_jja_maxT <- max %>% subset(Year >= 2005)
+
+## Summer Tmean/HImean ##
+DailyMeanDF <- read_csv(file = '~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/DailyMeanDF.csv')
+mean <- data.table(DailyMeanDF)
+bin1_jja_meanT <- mean %>% subset(Year >= 1957)
+bin2_jja_meanT <- mean %>% subset(Year >= 1982)
+bin3_jja_meanT <- mean %>% subset(Year >= 2005)
+
+## Summer Tmin/HImin ##
+DailyMinDF <- read_csv(file = '~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/DailyMinDF.csv')
+min <- data.table(DailyMinDF)
+bin1_jja_minT <- min %>% subset(Year >= 1957)
+bin2_jja_minT <- min %>% subset(Year >= 1982)
+bin3_jja_minT <- min %>% subset(Year >= 2005)
+
+#Make the different time series for each tertile of residents, formatted as DailyMax.YY (where the time series goes from YYYY to 2016)
+DailyMax.1957=DailyMaxDF[DailyMaxDF$Year>=1957 & DailyMaxDF$Year<=2016, ]
+DailyMax.1982=DailyMaxDF[DailyMaxDF$Year>=1982 & DailyMaxDF$Year<=2016, ]
+DailyMax.2005=DailyMaxDF[DailyMaxDF$Year>=2005 & DailyMaxDF$Year<=2016, ]
+
+#Isolate the wintertime data
+winter_temps <- read.csv("~/Dropbox/_Summer 2020/ongoing research/knox clim study/winter_wx/new temp data/winter_tmax.csv")
+winter_tmax <- data.frame(winter_temps)
+
+# Bin 1 Winter temps (1956/57-2015/16)
+bin1w <- winter_tmax %>% filter(X < 21975 & X >= 336 )
+# Bin 2 Winter temps (1981/82-2015/16)
+bin2w <- winter_tmax %>% filter(X < 21975 & X >= 9467 )
+# Bin 3 Winter temps (2004/05-2015/16)
+bin3w <- winter_tmax %>% filter(X < 21975 & X >= 17868 )
+
+winter_temp <- data.table(winter_temps)
+bin1_djf <- winter_temp %>% subset(YEAR_season >= 1957)
+bin2_djf <- winter_temp %>% subset(YEAR_season >= 1982)
+bin3_djf <- winter_temp %>% subset(YEAR_season >= 2005)
+
+##### Get Max Temps at & above 95th Percentile 
+maxT_1957_95 <- DailyMax.1957 %>% filter(MaxDailyTemperature >= 93.9)
+maxT_1982_95 <- DailyMax.1982 %>% filter(MaxDailyTemperature >= 95)
+maxT_2005_95 <- DailyMax.2005 %>% filter(MaxDailyTemperature >= 95)
+maxHI_1957_95 <- DailyMax.1957 %>% filter(MaxDailyHeatIndex >= 99.7)
+maxHI_1982_95 <- DailyMax.1982 %>% filter(MaxDailyHeatIndex >= 100)
+maxHI_2005_95 <- DailyMax.2005 %>% filter(MaxDailyHeatIndex >= 100)
+
+##### 5th Percentile 
+maxW_1957_5 <- bin1_djf %>% filter(MaxDailyTemp <= 30.9)
+maxW_1982_5 <- bin2_djf %>% filter(MaxDailyTemp <= 30.9)
+maxW_2005_5 <- bin3_djf %>% filter(MaxDailyTemp <= 32)
+
+minW_1957_5 <- bin1_djf %>% filter(MinDailyTemp <= 14)
+minW_1982_5 <- bin2_djf %>% filter(MinDailyTemp <= 15.1)
+minW_2005_5 <- bin3_djf %>% filter(MinDailyTemp <= 16)
+
+```
+```{r code for plot objects, include=FALSE}
+
+##### Data objects for ALL plots #####
+
+one <- ggplot(bin1_jja_maxT, aes(Year, MaxDailyTemperature, colour = Month)) +
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "firebrick3", lwd = 0.9) +
+  labs(title = "Maximum summer temperature", y = "Daily values") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(41,113)
+
+two <- ggplot(bin2_jja_maxT, aes(Year, MaxDailyTemperature, colour = Month)) +
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "firebrick3", lwd = 0.9) +
+  labs(title = "Maximum summer temperature", y = "Daily values") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(41,113)
+
+three <- ggplot(bin3_jja_maxT, aes(Year, MaxDailyTemperature, colour = Month)) + 
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "firebrick3", lwd = 0.9) +
+  labs(title = "Maximum summer temperature", y = "Daily values") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(41,113)
+
+four <- ggplot(bin1_jja_meanT, aes(Year, MeanDailyTemperature, colour = Month)) + 
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "firebrick3", lwd = 0.9) +
+  labs(title = "Mean summer temperature", y = "Daily values") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(41,113)
+
+five <- ggplot(bin2_jja_meanT, aes(Year, MeanDailyTemperature, colour = Month)) + 
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "firebrick3", lwd = 0.9) +
+  labs(title = "Mean summer temperature", y = "Daily values") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(41,113)
+
+six <- ggplot(bin3_jja_meanT, aes(Year, MeanDailyTemperature, colour = Month)) + 
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "firebrick3", lwd = 0.9) +
+  labs(title = "Mean summer temperature", y = "Daily values") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none")+ 
+  ylim(41,113)
+
+seven <- ggplot(bin1_jja_minT, aes(Year, MinDailyTemperature, colour = Month)) + 
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "firebrick3", lwd = 0.9) +
+  labs(title = "Minimum summer temperature", y = "Daily values") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(41,113)
+
+eight <- ggplot(bin2_jja_minT, aes(Year, MinDailyTemperature, colour = Month)) + 
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "firebrick3", lwd = 0.9) +
+  labs(title = "Minimum summer temperature", y = "Daily values") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(41,113)
+
+nine <- ggplot(bin3_jja_minT, aes(Year, MinDailyTemperature, colour = Month)) + 
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "firebrick3", lwd = 0.9) +
+  labs(title = "Minimum summer temperature", y = "Daily values") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(41,113)
+
+ten <- ggplot(bin1_jja_maxT, aes(Year, MaxDailyHeatIndex, colour = Month)) + 
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "orange", lwd = 0.9) +
+  labs(title = "Maximum summer heat index", y = "Daily values") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(41,113)
+
+eleven <- ggplot(bin2_jja_maxT, aes(Year, MaxDailyHeatIndex, colour = Month)) + 
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "orange", lwd = 0.9) +
+  labs(title = "Maximum summer heat index", y = "Daily values") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(41,113)
+
+twelve <- ggplot(bin3_jja_maxT, aes(Year, MaxDailyHeatIndex, colour = Month)) +
+  geom_point(size = 0.5, alpha = 3/10) +
+  geom_smooth(method = "loess", colour = "orange", lwd = 0.8) +
+  labs(title = "Maximum summer heat index", y = "Daily values") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(41,113)
+
+thirteen <- ggplot(bin1_jja_meanT, aes(Year, MeanDailyHeatIndex, colour = Month)) + 
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "orange", lwd = 0.9) +
+  labs(title = "Mean summer heat index", y = "Daily values") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(41,113)
+
+fourteen <- ggplot(bin2_jja_meanT, aes(Year, MeanDailyHeatIndex, colour = Month)) + 
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "orange", lwd = 0.9) +
+  labs(title = "Mean summer heat index", y = "Daily values") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(41,113)
+
+fifteen <- ggplot(bin3_jja_meanT, aes(Year, MeanDailyHeatIndex, colour = Month)) + 
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "orange", lwd = 0.9) +
+  labs(title = "Mean summer heat index", y = "Daily values") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(41,113)
+
+sixteen <- ggplot(bin1_jja_minT, aes(Year, MinDailyHeatIndex, colour = Month)) + 
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "orange", lwd = 0.9) +
+  labs(title = "Minimum summer heat index", y = "Daily values") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(41,113)
+
+seventeen <- ggplot(bin2_jja_minT, aes(Year, MinDailyHeatIndex, colour = Month)) + 
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "orange", lwd = 0.9) +
+  labs(title = "Minimum summer heat index", y = "Daily values") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(41,113)
+
+eighteen <- ggplot(bin3_jja_minT, aes(Year, MinDailyHeatIndex, colour = Month)) + 
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "orange", lwd = 0.9) +
+  labs(title = "Minimum summer heat index", y = "Daily values") +
+  facet_wrap(~Month, labeller=labeller(Month=c("6"="June", "7"="July", "8"="August"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(41,113)
+
+twentyone <- ggplot(bin3w, aes(YEAR_season, MaxDailyTemp, colour = MONTH_order)) + 
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "deepskyblue4", lwd = 0.9) +
+  labs(title = "Maximum winter temperature", 
+       x = "Season (latter year)", y = "Daily values") +
+  facet_wrap(~MONTH_order, labeller=labeller(MONTH_order=c("1"="December", "2"="January", "3"="February"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(-4,76)
+
+twenty <- ggplot(bin2w, aes(YEAR_season, MaxDailyTemp, colour = MONTH_order)) + 
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "deepskyblue4", lwd = 0.9) +
+  labs(title = "Maximum winter temperature", 
+       x = "Season (latter year)", y = "Daily values") +
+  facet_wrap(~MONTH_order, labeller=labeller(MONTH_order=c("1"="December", "2"="January", "3"="February"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(-24,76)
+
+nineteen <- ggplot(bin1w, aes(YEAR_season, MaxDailyTemp, colour = MONTH_order)) + 
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "deepskyblue4", lwd = 0.9) +
+  labs(title = "Maximum winter temperature", 
+       x = "Season (latter year)", y = "Daily values") +
+  facet_wrap(~MONTH_order, labeller=labeller(MONTH_order=c("1"="December", "2"="January", "3"="February"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(-24,83)
+
+twentyfour <- ggplot(bin3w, aes(YEAR_season, MeanDailyTemp, colour = MONTH_order)) + 
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "deepskyblue4", lwd = 0.9) +
+  labs(title = "Mean winter temperature", 
+       x = "Season (latter year)", y = "Daily values") +
+  facet_wrap(~MONTH_order, labeller=labeller(MONTH_order=c("1"="December", "2"="January", "3"="February"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(-4,76)
+
+twentythree <- ggplot(bin2w, aes(YEAR_season, MeanDailyTemp, colour = MONTH_order)) + 
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "deepskyblue4", lwd = 0.9) +
+  labs(title = "Mean winter temperature", 
+       x = "Season (latter year)", y = "Daily values") +
+  facet_wrap(~MONTH_order, labeller=labeller(MONTH_order=c("1"="December", "2"="January", "3"="February"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(-24,76)
+
+twentytwo <- ggplot(bin1w, aes(YEAR_season, MeanDailyTemp, colour = MONTH_order)) + 
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "deepskyblue4", lwd = 0.9) +
+  labs(title = "Mean winter temperature", 
+       x = "Season (latter year)", y = "Daily values") +
+  facet_wrap(~MONTH_order, labeller=labeller(MONTH_order=c("1"="December", "2"="January", "3"="February"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(-24,83)
+
+twentyseven <- ggplot(bin3w, aes(YEAR_season, MinDailyTemp, colour = MONTH_order)) + 
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "deepskyblue4", lwd = 0.9) +
+  labs(title = "Minimum winter temperature", 
+       x = "Season (latter year)", y = "Daily values") +
+  facet_wrap(~MONTH_order, labeller=labeller(MONTH_order=c("1"="December", "2"="January", "3"="February"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(-4,76)
+
+twentysix <- ggplot(bin2w, aes(YEAR_season, MinDailyTemp, colour = MONTH_order)) + 
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "deepskyblue4", lwd = 0.9) +
+  labs(title = "Minimum winter temperature", 
+       x = "Season (latter year)", y = "Daily values") +
+  facet_wrap(~MONTH_order, labeller=labeller(MONTH_order=c("1"="December", "2"="January", "3"="February"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(-24,76)
+
+twentyfive <- ggplot(bin1w, aes(YEAR_season, MinDailyTemp, colour = MONTH_order)) + 
+  geom_point(size = 0.8, alpha = 0.15) +
+  geom_smooth(method = "loess", colour = "deepskyblue4", lwd = 0.9) +
+  labs(title = "Minimum winter temperature", 
+       x = "Season (latter year)", y = "Daily values") +
+  facet_wrap(~MONTH_order, labeller=labeller(MONTH_order=c("1"="December", "2"="January", "3"="February"))) + 
+  theme(text = element_text(size = 10, family = "Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  scale_color_gradient(low="dimgrey", high="dimgrey") + 
+  theme(legend.position="none") + 
+  ylim(-24,83)
+
+```
+
+<h5 style="font-size:16px">**Short-term residents** (2005&ndash;2016)</h5>
+
+```{r bin 3 plots T, fig.height = 3.5, fig.width = 13, echo=FALSE, warning=FALSE, message=FALSE}
+
+##### *Summer (JJA) temperature*
+grid.arrange(three, six, nine, nrow = 1)
+
+##### *Summer heat index*
+grid.arrange(twelve, fifteen, eighteen, nrow = 1)
+
+##### *Winter (DJF) temperature*
+grid.arrange(twentyone, twentyfour, twentyseven, nrow = 1)
+```
+
+<h5 style="font-size:16px">**Medium-term residents** (1982&ndash;2016)</h5>
+
+```{r bin 2 plots T, fig.height = 3.5, fig.width = 13, echo=FALSE, warning=FALSE, message=FALSE}
+
+##### *Summer (JJA) temperature*
+grid.arrange(two, five, eight, nrow = 1)
+
+##### *Summer heat index*
+grid.arrange(eleven, fourteen, seventeen, nrow = 1)
+
+##### *Winter (DJF) temperature*
+grid.arrange(twenty, twentythree, twentysix, nrow = 1)
+
+```
+
+<h5 style="font-size:16px">**Long-term residents** (1957&ndash;2016)</h5>
+
+```{r bin 1 plots T, fig.height = 3.5, fig.width = 13, echo=FALSE, warning=FALSE, message=FALSE}
+
+##### *Summer (JJA) temperature*
+grid.arrange(one, four, seven, nrow = 1)
+
+##### *Summer heat index*
+grid.arrange(ten, thirteen, sixteen, nrow = 1)
+
+##### *Winter (DJF) temperature*
+grid.arrange(nineteen, twentytwo, twentyfive, nrow = 1)
+
+```
+<br>
+
+#### **Mann-Kendall trend test: Maximum, mean, & minimum daily climate**
+<p style="font-size:14px">A Mann-Kendall (M-K) trend test was run for the maximum, mean, and minimum values for the summer temperature, summer heat index, and winter temperature. The results are provided in the table below: the Kendall tau (&tau;) coefficient and its affiliated $p$-value reflect the the possible presence of a trend in the values over the dataset and its statistical significance, respectively. The `MannKendall` function from the `'Kendall'` package was employed in R for this test. This `function(x)` only considers the variable being measured, and does not incorporate an explicit dependent variable. Instead, the range of $y$ views the dataset without grouping it by units of time, so the function simply evaluates how the values change from data point to data point. As a result, $n$ reflects the number of observations present in the dataset all together, at times leading to small Kendall &tau; values. A Theil-Sen slope estimator is then applied to determine the slope of the trend; we used the `theil_sen_slope` function from the `'mkac'` package in R.</p>
+
+```{r mk tests on climate data, include=FALSE}
+
+MannKendall(bin3_jja_maxT$MaxDailyTemperature)
+theil_sen_slope(bin3_jja_maxT$MaxDailyTemperature)
+MannKendall(bin3_jja_meanT$MeanDailyTemperature)
+theil_sen_slope(bin3_jja_meanT$MeanDailyTemperature)
+MannKendall(bin3_jja_minT$MinDailyTemperature)
+theil_sen_slope(bin3_jja_minT$MinDailyTemperature)
+MannKendall(bin3_jja_maxT$MaxDailyHeatIndex)
+theil_sen_slope(bin3_jja_maxT$MaxDailyHeatIndex)
+MannKendall(bin3_jja_meanT$MeanDailyHeatIndex)
+theil_sen_slope(bin3_jja_meanT$MeanDailyHeatIndex)
+MannKendall(bin3_jja_minT$MinDailyHeatIndex)
+theil_sen_slope(bin3_jja_minT$MinDailyHeatIndex)
+MannKendall(bin3_djf$MaxDailyTemp)
+theil_sen_slope(bin3_djf$MaxDailyTemp)
+MannKendall(bin3_djf$MeanDailyTemp)
+theil_sen_slope(bin3_djf$MeanDailyTemp)
+MannKendall(bin3_djf$MinDailyTemp)
+theil_sen_slope(bin3_djf$MinDailyTemp)
+
+
+MannKendall(bin2_jja_maxT$MaxDailyTemperature)
+theil_sen_slope(bin2_jja_maxT$MaxDailyTemperature)
+MannKendall(bin2_jja_meanT$MeanDailyTemperature)
+theil_sen_slope(bin2_jja_meanT$MeanDailyTemperature)
+MannKendall(bin2_jja_minT$MinDailyTemperature)
+theil_sen_slope(bin2_jja_minT$MinDailyTemperature)
+MannKendall(bin2_jja_maxT$MaxDailyHeatIndex)
+theil_sen_slope(bin2_jja_maxT$MaxDailyHeatIndex)
+MannKendall(bin2_jja_meanT$MeanDailyHeatIndex)
+theil_sen_slope(bin2_jja_meanT$MeanDailyHeatIndex)
+MannKendall(bin2_jja_minT$MinDailyHeatIndex)
+theil_sen_slope(bin2_jja_minT$MinDailyHeatIndex)
+MannKendall(bin2_djf$MaxDailyTemp)
+theil_sen_slope(bin2_djf$MaxDailyTemp)
+MannKendall(bin2_djf$MeanDailyTemp)
+theil_sen_slope(bin2_djf$MeanDailyTemp)
+MannKendall(bin2_djf$MinDailyTemp)
+theil_sen_slope(bin2_djf$MinDailyTemp)
+
+MannKendall(bin1_jja_maxT$MaxDailyTemperature)
+theil_sen_slope(bin1_jja_maxT$MaxDailyTemperature)
+MannKendall(bin1_jja_meanT$MeanDailyTemperature)
+theil_sen_slope(bin1_jja_meanT$MeanDailyTemperature)
+MannKendall(bin1_jja_minT$MinDailyTemperature)
+theil_sen_slope(bin1_jja_minT$MinDailyTemperature)
+MannKendall(bin1_jja_maxT$MaxDailyHeatIndex)
+theil_sen_slope(bin1_jja_maxT$MaxDailyHeatIndex)
+MannKendall(bin1_jja_meanT$MeanDailyHeatIndex)
+theil_sen_slope(bin1_jja_meanT$MeanDailyHeatIndex)
+MannKendall(bin1_jja_minT$MinDailyHeatIndex)
+theil_sen_slope(bin1_jja_minT$MinDailyHeatIndex)
+MannKendall(bin1_djf$MaxDailyTemp)
+theil_sen_slope(bin1_djf$MaxDailyTemp)
+MannKendall(bin1_djf$MeanDailyTemp)
+theil_sen_slope(bin1_djf$MeanDailyTemp)
+MannKendall(bin1_djf$MinDailyTemp)
+theil_sen_slope(bin1_djf$MinDailyTemp)
+
+```
+
+```{r MK climate table input, include=FALSE}
+
+mktemps <- read_csv(file = '~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/summertemps/mktemps.csv')
+mktab <- data.table(mktemps)
+mk <- mktab %>%
+  kable(digits = c(0,0,4,3,3,3,4), align = "llllccr", col.names = c("", "Residence bin", "Variable", "Level", "Kendall $\\tau$", "$p$ value", "Theil Sen slope"), escape = FALSE) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed", "responsive", "bordered", full_width = F))
+
+mk_short <- mktab %>% filter(X <= 9)
+mk_medium <- mktab %>% filter(X >= 10 & X <= 18)
+mk_long <- mktab %>% filter(X >= 19)
+
+```
+
+<h5 style="text-align:center; font-size:16px">**Short-term residents** (2005&ndash;2016)</h5>
+
+```{r bin 3 mk table, echo = FALSE}
+
+library(dplyr)
+library(knitr)
+library(kableExtra)
+opts <- options(knitr.kable.NA = "")
+mk3 <- subset(mk_short, select = -c(X, bin, variable))
+
+kable(mk3, digits = c(3,3,3,4), align = "llcr", col.names = c("Variable", "Kendall $\\tau$&#x002A", "$p$ value", "Theil Sen slope"), booktabs = T, escape = FALSE) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed", "responsive", "hover"), font_size=14, full_width = F) %>%
+  pack_rows("Summer temperatures", 1, 3) %>%
+  pack_rows("Summer heat index", 4, 6) %>%
+  pack_rows("Winter temperatures", 7, 9) %>% 
+footnote(general = "Significance levels ( $p$ < * 0.05, ** 0.01, *** 0.001 or less) are provided.", general_title="", footnote_as_chunk = T)
+         
+```
+<br>
+
+<h5 style="text-align:center; font-size:16px">**Medium-term residents** (1982&ndash;2016)</h5>
+
+```{r bin 2 mk table, echo = FALSE}
+
+opts <- options(knitr.kable.NA = "")
+mk2 <- subset(mk_medium, select = -c(X, bin, variable))
+
+kable(mk2, "html", digits = c(3,3,3,4), align = "llcr", col.names = c("Variable", "Kendall $\\tau$&#x002A", "$p$ value", "Theil Sen slope"), escape = FALSE) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed", "responsive", "hover"), font_size=14, full_width = F) %>%
+  pack_rows("Summer temperatures", 1, 3) %>%
+  pack_rows("Summer heat index", 4, 6) %>%
+  pack_rows("Winter temperatures", 7, 9) %>% 
+footnote(general = "Significance levels ( $p$ < * 0.05, ** 0.01, *** 0.001 or less) are provided.", general_title="", footnote_as_chunk = T)
+
+```
+<br>
+
+<h5 style="text-align:center; font-size:16px">**Long-term residents** (1957&ndash;2016)</h5>
+
+```{r bin 1 mk table, echo = FALSE}
+
+opts <- options(knitr.kable.NA = "")
+mkone <- subset(mk_long, select = -c(X, bin, variable))
+
+kable(mkone, digits = c(3,3,3,4), align = "llcr", col.names = c("Variable", "Kendall $\\tau$&#x002A", "$p$ value", "Theil Sen slope"), escape = FALSE) %>% 
+  kable_styling(bootstrap_options = c("striped", "condensed", "responsive", "hover"), font_size=14, full_width = F) %>%
+  pack_rows("Summer temperatures", 1, 3) %>%
+  pack_rows("Summer heat index", 4, 6) %>%
+  pack_rows("Winter temperatures", 7, 9) %>%
+footnote(general = "Significance levels ( $p$ < * 0.05, ** 0.01, *** 0.001 or less) are provided.", general_title="", footnote_as_chunk = T)
+
+```
+<br>
+<blockquote style="font-size:15px; font-style:normal">
+<p><strong>Analyzing results:</strong></p>
+- How does temperature/heat index trend over time?
+- Overall, were there trends detected by bin? If so, what were they?
+- Were any of the trends statistically significant?
+- How great was the rate of change (slope) of the statistically significant trends?
+- In general, have hot temperatures increased/decreased over period of residence?
+- Have cold temperatures been increasing/decreasing over the period of residence?
+</blockquote>
+
+<br>
+
+$~$
+
+<h2 style="text-align:center">**Extreme climate data**</h2>
+<p style="font-size:14px">To adequately assess whether unusual or ‘extreme’ Knoxville weather has increased or decreased in frequency, we isolated what we considered as ‘extreme’. These events are defined as values that exceeded the 95<sup>th</sup> percentile in the case of summer data, and values that fell below the 5<sup>th</sup> percentile for winter data. These extreme datasets include values that are equal to the 95<sup>th</sup> and 5<sup>th</sup> percentiles. We also focus on only four climate variables: maximum summer temperatures, maximum heat index, maximum winter temperatures, and minimum winter temperatures. The 95<sup>th</sup> and 5<sup>th</sup> percentile threshold of each climate variable were calculated for the three residence bins. The ‘extreme’ events were grouped by year, producing annual frequency datasets that can demonstrate extreme climate behavior over time. Overall, four (4) extreme climate variables were assessed for each of the three (3) Knoxville residence bins. These datasets are used for any remaining analyses, which are shown below.</p>
+
+#### **Histograms**
+<p style="font-size:14px">We begin to address whether extreme temperatures are occurring more frequently through exploratory data analysis. Extreme values (> 95<sup>th</sup> or < 5<sup>th</sup> percentile) of four climate variables were plotted to show frequency distributions for each of the three residence bins. Histograms were generated at `binwidth = 1.6` and overlaid with a `stat_density` function to better ascertain the shape of the underlying distribution. For referencing purposes, the total count of observations (days that experienced an extreme temperature/heat event) and number of years in the dataset ($n$) are provided for each plot. The general shape across distributions appears to be Poisson. This determination is not unexpected, as extreme values (or tails) taken from an overall dataset and graphed as standalone values will generally produce a Poisson distribution. Note the histograms shown here though do not include the years reporting a zero (0) value, as the goal of this initial exercise is to assess how the frequency of extreme climate values has been fluctuating. Additionally, the zero values only represent a lack of extreme values in one individual year, as opposed to the number of days that did not observe extreme climate—the latter of which would dominate the graph and potentially eclipse the underlying distribution. Even when zero years are included in the total observation count, the resulting shape resembles a negative binomial distribution. Negative binomial is closely related to Poisson, yet more forgiving of zero-inflated datasets in terms of their variance. Once we’ve assessed the general distribution shape, we can progress to evaluating the annual frequency distribution of the extreme data, shown in the next section.</p>
+```{r frequency data without zeros, include=FALSE}
+
+a1 <- format(maxT_1957_95$Year, format = "%Y")
+table(a1)
+df_a1 <- as.data.frame(table(a1))
+b1 <- format(maxT_1982_95$Year, format = "%Y")
+table(b1)
+df_b1 <- as.data.frame(table(b1))
+c1 <- format(maxT_2005_95$Year, format = "%Y")
+table(c1)
+df_c1 <- as.data.frame(table(c1))
+d1 <- format(maxHI_1957_95$Year, format = "%Y")
+table(d1)
+df_d1 <- as.data.frame(table(d1))
+e1 <- format(maxHI_1982_95$Year, format = "%Y")
+table(e1)
+df_e1 <- as.data.frame(table(e1))
+f1 <- format(maxHI_2005_95$Year, format = "%Y")
+table(f1)
+df_f1 <- as.data.frame(table(f1))
+q1 <- format(maxW_1957_5$YEAR_season, format = "%Y")
+table(q1)
+df_q1 <- as.data.frame(table(q1))
+r1 <- format(maxW_1982_5$YEAR_season, format = "%Y")
+table(r1)
+df_r1 <- as.data.frame(table(r1))
+s1 <- format(maxW_2005_5$YEAR_season, format = "%Y")
+table(s1)
+df_s1 <- as.data.frame(table(s1))
+u1 <- format(minW_1957_5$YEAR_season, format = "%Y")
+table(u1)
+df_u1 <- as.data.frame(table(u1))
+w1 <- format(minW_1982_5$YEAR_season, format = "%Y")
+table(w1)
+df_w1 <- as.data.frame(table(w1))
+z1 <- format(minW_2005_5$YEAR_season, format = "%Y")
+table(z1)
+df_z1 <- as.data.frame(table(z1))
+
+```
+```{r code for geom_histogram() objects, include=FALSE}
+
+aS <- ggplot(df_a1, aes(Freq)) + 
+  geom_histogram(aes(y=..density..), binwidth=1.6, color="snow", fill="snow3") + 
+  labs(title = "Maximum summer temperatures", x="Daily values > 95th %-ile", y="Frequency") + 
+  theme(text=element_text(size=9, family="Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow")) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  theme(axis.title.x = element_text(vjust = -0.5), axis.title.y = element_text(vjust = 1.8)) + 
+  stat_density(color="firebrick3", alpha=0.1, fill="firebrick3") + 
+  geom_segment(aes(x=0, xend=30, y=0, yend=0), colour="gray55", size=0.5) + 
+  geom_segment(aes(x=0, xend=0, y=0, yend=0.18), colour="gray55", size=0.1) + 
+  xlim(c(0,30)) + 
+  ylim(c(0,.18)) + 
+  annotate(geom="text", x=22, y=0.15, label="Total count = 356", family="Myriad Pro Condensed", size=3) + 
+  annotate(geom="text", x=22, y=0.14, label="n = 60 yrs", family="Myriad Pro Condensed", size=3)
+
+bS <- ggplot(df_b1, aes(Freq)) + 
+  geom_histogram(aes(y=..density..), binwidth=1.6, color="snow", fill="snow3") + 
+  labs(title = "Maximum summer temperatures", x="Daily values > 95th %-ile", y="Frequency") + 
+  theme(text=element_text(size=9, family="Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow")) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  theme(axis.title.x = element_text(vjust = -0.5), axis.title.y = element_text(vjust = 1.8)) + 
+  stat_density(color="firebrick3", alpha=0.1, fill="firebrick3") + 
+  geom_segment(aes(x=0, xend=30, y=0, yend=0), colour="gray55", size=0.5) + 
+  geom_segment(aes(x=0, xend=0, y=0, yend=0.18), colour="gray55", size=0.1) + 
+  xlim(c(0,30)) + 
+  ylim(c(0,.18)) + 
+  annotate(geom="text", x=22, y=0.15, label="Total count = 165", family="Myriad Pro Condensed", size=3) + 
+  annotate(geom="text", x=22, y=0.14, label="n = 35 yrs", family="Myriad Pro Condensed", size=3)
+
+cS <- ggplot(df_c1, aes(Freq)) + 
+  geom_histogram(aes(y=..density..), binwidth=1.6, color="snow", fill="snow3") + 
+  labs(title = "Maximum summer temperatures", x="Daily values > 95th %-ile", y="Frequency") + 
+  theme(text=element_text(size=9, family="Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow")) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  theme(axis.title.x = element_text(vjust = -0.5), axis.title.y = element_text(vjust = 1.8)) + 
+  stat_density(color="firebrick3", alpha=0.1, fill="firebrick3") + 
+  geom_segment(aes(x=0, xend=30, y=0, yend=0), colour="gray55", size=0.5) + 
+  geom_segment(aes(x=0, xend=0, y=0, yend=0.18), colour="gray55", size=0.1) + 
+  xlim(c(0,30)) + 
+  ylim(c(0,.18)) + 
+  annotate(geom="text", x=22, y=0.15, label="Total count = 65", family="Myriad Pro Condensed", size=3) + 
+  annotate(geom="text", x=22, y=0.14, label="n = 12 yrs", family="Myriad Pro Condensed", size=3)
+
+dHI <- ggplot(df_d1, aes(Freq)) + 
+  geom_histogram(aes(y=..density..), binwidth=1.6, color="snow", fill="snow3") + 
+  labs(title = "Maximum summer heat index", x="Daily values > 95th %-ile", y="Frequency") + 
+  theme(text=element_text(size=9, family="Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow")) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  theme(axis.title.x = element_text(vjust = -0.5), axis.title.y = element_text(vjust = 1.8)) + 
+  stat_density(color="orange", alpha=0.1, fill="orange") + 
+  geom_segment(aes(x=0, xend=30, y=0, yend=0), colour="gray55", size=0.5) + 
+  geom_segment(aes(x=0, xend=0, y=0, yend=0.18), colour="gray55", size=0.1) + 
+  xlim(c(0,30)) + 
+  ylim(c(0,.18)) + 
+  annotate(geom="text", x=22, y=0.15, label="Total count = 265", family="Myriad Pro Condensed", size=3) + 
+  annotate(geom="text", x=22, y=0.14, label="n = 60 yrs", family="Myriad Pro Condensed", size=3)
+
+eHI <- ggplot(df_e1, aes(Freq)) + 
+  geom_histogram(aes(y=..density..), binwidth=1.6, color="snow", fill="snow3") + 
+  labs(title = "Maximum summer heat index", x="Daily values > 95th %-ile", y="Frequency") + 
+  theme(text=element_text(size=9, family="Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow")) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  theme(axis.title.x = element_text(vjust = -0.5), axis.title.y = element_text(vjust = 1.8)) + 
+  stat_density(color="orange", alpha=0.1, fill="orange") + 
+  geom_segment(aes(x=0, xend=30, y=0, yend=0), colour="gray55", size=0.5) + 
+  geom_segment(aes(x=0, xend=0, y=0, yend=0.18), colour="gray55", size=0.1) + 
+  xlim(c(0,30)) + 
+  ylim(c(0,.18)) + 
+  annotate(geom="text", x=22, y=0.15, label="Total count = 172", family="Myriad Pro Condensed", size=3) + 
+  annotate(geom="text", x=22, y=0.14, label="n = 35 yrs", family="Myriad Pro Condensed", size=3)
+
+fHI <- ggplot(df_f1, aes(Freq)) + 
+  geom_histogram(aes(y=..density..), binwidth=1.6, color="snow", fill="snow3") + 
+  labs(title = "Maximum summer heat index", x="Daily values > 95th %-ile", y="Frequency") + 
+  theme(text=element_text(size=9, family="Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow")) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  theme(axis.title.x = element_text(vjust = -0.5), axis.title.y = element_text(vjust = 1.8)) + 
+  stat_density(color="orange", alpha=0.1, fill="orange") + 
+  geom_segment(aes(x=0, xend=30, y=0, yend=0), colour="gray55", size=0.5) + 
+  geom_segment(aes(x=0, xend=0, y=0, yend=0.18), colour="gray55", size=0.1) + 
+  xlim(c(0,30)) + 
+  ylim(c(0,.18)) + 
+  annotate(geom="text", x=22, y=0.15, label="Total count = 59", family="Myriad Pro Condensed", size=3) + 
+  annotate(geom="text", x=22, y=0.14, label="n = 12 yrs", family="Myriad Pro Condensed", size=3)
+
+qWx <- ggplot(df_q1, aes(Freq)) + 
+  geom_histogram(aes(y=..density..), binwidth=1.6, color="snow", fill="snow3") + 
+  labs(title = "Maximum winter temperatures", x="Daily values < 5th %-ile", y="Frequency") + 
+  theme(text=element_text(size=9, family="Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow")) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  theme(axis.title.x = element_text(vjust = -0.5), axis.title.y = element_text(vjust = 1.8)) + 
+  stat_density(color="deepskyblue4", alpha=0.1, fill="deepskyblue4") + 
+  geom_segment(aes(x=0, xend=30, y=0, yend=0), colour="gray55", size=0.5) + 
+  geom_segment(aes(x=0, xend=0, y=0, yend=0.18), colour="gray55", size=0.1) + 
+  xlim(c(0,30)) + 
+  ylim(c(0,.18)) + 
+  annotate(geom="text", x=22, y=0.15, label="Total count = 246", family="Myriad Pro Condensed", size=3) + 
+  annotate(geom="text", x=22, y=0.14, label="n = 60 yrs", family="Myriad Pro Condensed", size=3)
+
+rWx <- ggplot(df_r1, aes(Freq)) + 
+  geom_histogram(aes(y=..density..), binwidth=1.6, color="snow", fill="snow3") + 
+  labs(title = "Maximum winter temperatures", x="Daily values < 5th %-ile", y="Frequency") + 
+  theme(text=element_text(size=9, family="Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow")) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  theme(axis.title.x = element_text(vjust = -0.5), axis.title.y = element_text(vjust = 1.8)) + 
+  stat_density(color="deepskyblue4", alpha=0.1, fill="deepskyblue4") + 
+  geom_segment(aes(x=0, xend=30, y=0, yend=0), colour="gray55", size=0.5) + 
+  geom_segment(aes(x=0, xend=0, y=0, yend=0.18), colour="gray55", size=0.1) + 
+  xlim(c(0,30)) + 
+  ylim(c(0,.18)) + 
+  annotate(geom="text", x=22, y=0.15, label="Total count = 134", family="Myriad Pro Condensed", size=3) + 
+  annotate(geom="text", x=22, y=0.14, label="n = 35 yrs", family="Myriad Pro Condensed", size=3)
+
+sWx <- ggplot(df_s1, aes(Freq)) + 
+  geom_histogram(aes(y=..density..), binwidth=1.6, color="snow", fill="snow3") + 
+  labs(title = "Maximum winter temperatures", x="Daily values < 5th %-ile", y="Frequency") + 
+  theme(text=element_text(size=9, family="Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow")) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  theme(axis.title.x = element_text(vjust = -0.5), axis.title.y = element_text(vjust = 1.8)) + 
+  stat_density(color="deepskyblue4", alpha=0.1, fill="deepskyblue4") + 
+  geom_segment(aes(x=0, xend=30, y=0, yend=0), colour="gray55", size=0.5) + 
+  geom_segment(aes(x=0, xend=0, y=0, yend=0.18), colour="gray55", size=0.1) + 
+  xlim(c(0,30)) + 
+  ylim(c(0,.18)) + 
+  annotate(geom="text", x=22, y=0.15, label="Total count = 64", family="Myriad Pro Condensed", size=3) + 
+  annotate(geom="text", x=22, y=0.14, label="n = 12 yrs", family="Myriad Pro Condensed", size=3)
+
+uWn <- ggplot(df_u1, aes(Freq)) + 
+  geom_histogram(aes(y=..density..), binwidth=1.6, color="snow", fill="snow3") + 
+  labs(title = "Minimum winter temperatures", x="Daily values < 5th %-ile", y="Frequency") + 
+  theme(text=element_text(size=9, family="Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow")) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  theme(axis.title.x = element_text(vjust = -0.5), axis.title.y = element_text(vjust = 1.8)) + 
+  stat_density(color="lightseagreen", alpha=0.1, fill="lightseagreen") + 
+  xlim(c(0,30)) + 
+  ylim(c(0,.18)) + 
+  annotate(geom="text", x=22, y=0.15, label="Total count = 275", family="Myriad Pro Condensed", size=3) + 
+  annotate(geom="text", x=22, y=0.14, label="n = 60 yrs", family="Myriad Pro Condensed", size=3)
+
+wWn <- ggplot(df_w1, aes(Freq)) + 
+  geom_histogram(aes(y=..density..), binwidth=1.6, color="snow", fill="snow3") + 
+  labs(title = "Minimum winter temperatures", x="Daily values < 5th %-ile", y="Frequency") + 
+  theme(text=element_text(size=9, family="Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow")) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  theme(axis.title.x = element_text(vjust = -0.5), axis.title.y = element_text(vjust = 1.8)) + 
+  stat_density(color="lightseagreen", alpha=0.1, fill="lightseagreen") + 
+  xlim(c(0,30)) + 
+  ylim(c(0,.18)) + 
+  annotate(geom="text", x=22, y=0.15, label="Total count = 173", family="Myriad Pro Condensed", size=3) + 
+  annotate(geom="text", x=22, y=0.14, label="n = 35 yrs", family="Myriad Pro Condensed", size=3)
+
+zWn <- ggplot(df_z1, aes(Freq)) + 
+  geom_histogram(aes(y=..density..), binwidth=1.6, color="snow", fill="snow3") + 
+  labs(title = "Minimum winter temperatures", x="Daily values < 5th %-ile", y="Frequency") + 
+  theme(text=element_text(size=9, family="Myriad Pro Condensed")) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow")) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  theme(axis.title.x = element_text(vjust = -0.5), axis.title.y = element_text(vjust = 1.8)) + 
+  stat_density(color="lightseagreen", alpha=0.1, fill="lightseagreen") + 
+  geom_segment(aes(x=0, xend=30, y=0, yend=0), colour="gray55", size=0.5) + 
+  xlim(c(0,30)) + 
+  ylim(c(0,.18)) + 
+  annotate(geom="text", x=22, y=0.15, label="Total count = 60", family="Myriad Pro Condensed", size=3) + 
+  annotate(geom="text", x=22, y=0.14, label="n = 12 yrs", family="Myriad Pro Condensed", size=3)
+
+```
+
+<h5 style="font-size:16px">**Short-term residents** (2005&ndash;2016)</h5>
+
+```{r bin 3 histograms, fig.height = 3.5, fig.width = 14, echo = FALSE, warning=FALSE}
+
+grid.arrange(cS, fHI, sWx, zWn, nrow = 1)
+
+```
+<br>
+
+<h5 style="font-size:16px">**Medium-term residents** (1982&ndash;2016)</h5>
+
+```{r bin 2 histograms, fig.height = 3.5, fig.width = 14, echo = FALSE, warning=FALSE}
+
+grid.arrange(bS, eHI, rWx, wWn, nrow = 1)
+
+```
+<br>
+
+<h5 style="font-size:16px">**Long-term residents** (1957&ndash;2016)</h5>
+
+```{r bin 1 histograms, fig.height = 3.5, fig.width = 14, echo = FALSE, warning=FALSE}
+
+grid.arrange(aS, dHI, qWx, uWn, nrow = 1)
+
+```
+<small>&#x002A;Years that did not experience extreme temperature events were not included in datasets.</small>
+<br>
+
+#### **Time series plots**
+<p style="font-size:14px">Times series plots were also produced to visualize annual frequency of extreme climate events over each of the residence periods. To help pinpoint any distinct trends (or lack thereof), a basic trendline was fashioned for each plot. The trendline was produced with `geom_smooth` from the `'ggplot2'` package, and because we are viewing frequency of count data, we delineated the `‘glm’` method for estimation. Although the histograms suggest a Poisson distribution, the plots also left out the years with frequency values of 0 when they were produced. However, when those missing years are included in the histogram (not shown), the distribution takes a distinct negative binomial shape. As the time series analysis includes years with 0, a negative binomial distribution is assumed and the `geom_smooth()` method is specified as `‘glm.nb’`. The resulting trendlines therefore reflect a negative binomial regression model that was fit to each dataset.</p>
+```{r frequency data with zeros, include=FALSE}
+
+a10 <- read.csv("~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/summertemps/extremes/df_a1.csv")
+a <- data.frame(a10)
+b10 <- read.csv("~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/summertemps/extremes/df_b1.csv")
+b <- data.frame(b10)
+c10 <- read.csv("~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/summertemps/extremes/df_c1.csv")
+c <- data.frame(c10)
+d10 <- read.csv("~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/summertemps/extremes/df_d1.csv")
+d <- data.frame(d10)
+e10 <- read.csv("~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/summertemps/extremes/df_e1.csv")
+e <- data.frame(e10)
+f10 <- read.csv("~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/summertemps/extremes/df_f1.csv")
+f <- data.frame(f10)
+q10 <- read.csv("~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/summertemps/extremes/df_q1.csv")
+q <- data.frame(q10)
+r10 <- read.csv("~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/summertemps/extremes/df_r1.csv")
+r <- data.frame(r10)
+s10 <- read.csv("~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/summertemps/extremes/df_s1.csv")
+s <- data.frame(s10)
+u10 <- read.csv("~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/summertemps/extremes/df_u1.csv")
+u <- data.frame(u10)
+w10 <- read.csv("~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/summertemps/extremes/df_w1.csv")
+w <- data.frame(w10)
+z10 <- read.csv("~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/summertemps/extremes/df_z1.csv")
+z <- data.frame(z10)
+
+# Reduce frequency datasets to 2 columns (Year, Frequency)
+a0 <- subset(a, select = -c(X1957MaxSummT_95))
+b0 <- subset(b, select = -c(X1982MaxSummT_95))
+c0 <- subset(c, select = -c(X2005MaxSummT_95))
+d0 <- subset(d, select = -c(X1957MaxSummHI_95))
+e0 <- subset(e, select = -c(X1982MaxSummHI_95))
+f0 <- subset(f, select = -c(X2005MaxSummHI_95))
+q0 <- subset(q, select = -c(X1957MaxWinT_5))
+r0 <- subset(r, select = -c(X1982MaxWinT_5))
+s0 <- subset(s, select = -c(X2005MaxWinT_5))
+u0 <- subset(u, select = -c(X1957MinWinT_5))
+w0 <- subset(w, select = -c(X1982MinWinT_5))
+z0 <- subset(z, select = -c(X2005MinWinT_5))
+
+```
+
+```{r ggplots for frequency over time, include=FALSE}
+
+library(MASS)
+
+a0time <- ggplot(data=a0, mapping = aes(x = Year, y = Frequency)) +
+  geom_smooth(aes(group=1), method = "glm.nb", formula = y ~ x, se = FALSE, colour="snow", size=2) + 
+  geom_smooth(aes(group=1), method = "glm.nb", formula = y ~ x, se = FALSE, colour="firebrick3", size=1) + 
+  stat_summary(aes(x = Year, y = Frequency), fun = sum, geom = "col", color="snow", fill="snow3") + 
+  labs(title = "Maximum summer temperatures", x = "Year", y = "Daily values > 95th %-ile") + 
+  theme(text = element_text(size = 9, family = "Myriad Pro Condensed")) + 
+  theme(axis.title.x = element_text(vjust = -0.5), axis.title.y = element_text(vjust = 1.8)) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  theme(legend.position="none", plot.margin = margin(.4, .5, .4, .4, "cm")) + 
+  xlim(c(1955,2017)) + 
+  ylim(c(0,30)) + 
+  annotate(geom="text", x=1960, y=25, label="Total count = 356", family="Myriad Pro Condensed", size=3.5) + 
+  annotate(geom="text", x=1960, y=23, label="n = 60 yrs", family="Myriad Pro Condensed", size=3.5)
+
+b0time <- ggplot(data=b0, mapping = aes(x = Year, y = Frequency)) + 
+  geom_smooth(aes(group=1), method = "glm.nb", formula = y ~ x, se = FALSE, colour="snow", size=1.5) + 
+  geom_smooth(aes(group=1), method = "glm.nb", formula = y ~ x, se = FALSE, colour="firebrick3", size=0.75) + 
+  stat_summary(aes(x = Year, y = Frequency), fun = sum, geom = "col", color="snow", fill="snow3") + 
+  labs(title = "Maximum summer temperatures", x = "Year", y = "Daily values > 95th %-ile") + 
+  theme(text = element_text(size = 7.5, family = "Myriad Pro Condensed")) + 
+  theme(axis.title.x = element_text(vjust = -0.5), axis.title.y = element_text(vjust = 1.8)) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  theme(legend.position="none", plot.margin = margin(.4, .5, .4, .4, "cm")) + 
+  xlim(c(1981,2017)) + 
+  ylim(c(0,25)) + 
+  annotate(geom="text", x=2013, y=22, label="Total count = 165", family="Myriad Pro Condensed", size=2.5) + 
+  annotate(geom="text", x=2013, y=20.5, label="n = 35 yrs", family="Myriad Pro Condensed", size=2.5)
+
+c0time <- ggplot(data=c0, mapping = aes(x = Year, y = Frequency)) + 
+  geom_smooth(aes(group=1), method = "glm.nb", formula = y ~ x, se = FALSE, colour="snow", size=1.5) + 
+  geom_smooth(aes(group=1), method = "glm.nb", formula = y ~ x, se = FALSE, colour="firebrick3", size=0.75) + 
+  stat_summary(aes(x = Year, y = Frequency), fun = sum, geom = "col", color="snow", fill="snow3") + 
+  labs(title = "Maximum summer temperatures", x = "Year", y = "Daily values > 95th %-ile") + 
+  theme(text = element_text(size = 6, family = "Myriad Pro Condensed")) + 
+  theme(axis.title.x = element_text(vjust = -0.5), axis.title.y = element_text(vjust = 1.8)) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  theme(legend.position="none", plot.margin = margin(.4, .5, .4, .4, "cm")) + 
+  xlim(c(2004,2017)) + 
+  ylim(c(0,20)) + 
+  annotate(geom="text", x=2014, y=16, label="Total count = 65", family="Myriad Pro Condensed", size=2) + 
+  annotate(geom="text", x=2014, y=14.5, label="n = 12 yrs", family="Myriad Pro Condensed", size=2)
+
+d0time <- ggplot(data=d0, mapping = aes(x = Year, y = Frequency)) + 
+  geom_smooth(aes(group=1), method = "glm.nb", formula = y ~ x, se = FALSE, colour="snow", size=2) + 
+  geom_smooth(aes(group=1), method = "glm.nb", formula = y ~ x, se = FALSE, colour="orange", size=1) + 
+  stat_summary(aes(x = Year, y = Frequency), fun = sum, geom = "col", color="snow", fill="snow3") + 
+  labs(title = "Maximum summer heat index", x = "Year", y = "Daily values > 95th %-ile") + 
+  theme(text = element_text(size = 9, family = "Myriad Pro Condensed")) + 
+  theme(axis.title.x = element_text(vjust = -0.5), axis.title.y = element_text(vjust = 1.8)) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  theme(legend.position="none", plot.margin = margin(.4, .5, .4, .4, "cm")) + 
+  xlim(c(1955,2017)) + 
+  ylim(c(0,30)) + 
+  annotate(geom="text", x=1960, y=25, label="Total count = 265", family="Myriad Pro Condensed", size=3.5) + 
+  annotate(geom="text", x=1960, y=23, label="n = 60 yrs", family="Myriad Pro Condensed", size=3.5)
+
+e0time <- ggplot(data=e0, mapping = aes(x = Year, y = Frequency)) + 
+  geom_smooth(aes(group=1), method = "glm.nb", formula = y ~ x, se = FALSE, colour="snow", size=1.5) + 
+  geom_smooth(aes(group=1), method = "glm.nb", formula = y ~ x, se = FALSE, colour="orange", size=0.75) + 
+  stat_summary(aes(x = Year, y = Frequency), fun = sum, geom = "col", color="snow", fill="snow3") + 
+  labs(title = "Maximum summer heat index", x = "Year", y = "Daily values > 95th %-ile") + 
+  theme(text = element_text(size = 7.5, family = "Myriad Pro Condensed")) + 
+  theme(axis.title.x = element_text(vjust = -0.5), axis.title.y = element_text(vjust = 1.8)) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  theme(legend.position="none", plot.margin = margin(.4, .5, .4, .4, "cm")) + 
+  xlim(c(1981,2017)) + 
+  ylim(c(0,25)) + 
+  annotate(geom="text", x=2013, y=22, label="Total count = 172", family="Myriad Pro Condensed", size=2.5) + 
+  annotate(geom="text", x=2013, y=20.5, label="n = 35 yrs", family="Myriad Pro Condensed", size=2.5)
+
+f0time <- ggplot(data=f0, mapping = aes(x = Year, y = Frequency)) + 
+  geom_smooth(aes(group=1), method = "glm.nb", formula = y ~ x, se = FALSE, colour="snow", size=1.5) + 
+  geom_smooth(aes(group=1), method = "glm.nb", formula = y ~ x, se = FALSE, colour="orange", size=0.75) + 
+  stat_summary(aes(x = Year, y = Frequency), fun = sum, geom = "col", color="snow", fill="snow3") + 
+  labs(title = "Maximum summer heat index", x = "Year", y = "Daily values > 95th %-ile") + 
+  theme(text = element_text(size = 6, family = "Myriad Pro Condensed")) + 
+  theme(axis.title.x = element_text(vjust = -0.5), axis.title.y = element_text(vjust = 1.8)) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  theme(legend.position="none", plot.margin = margin(.4, .5, .4, .4, "cm")) + 
+  xlim(c(2004,2017)) + 
+  ylim(c(0,20)) + 
+  annotate(geom="text", x=2014, y=16, label="Total count = 59", family="Myriad Pro Condensed", size=2) + 
+  annotate(geom="text", x=2014, y=14.5, label="n = 12 yrs", family="Myriad Pro Condensed", size=2)
+
+q0time <- ggplot(data=q0, mapping = aes(x = Year, y = Frequency)) + 
+  geom_smooth(aes(group=1), method = "glm.nb", formula = y ~ x, se = FALSE, colour="snow", size=2) + 
+  geom_smooth(aes(group=1), method = "glm.nb", formula = y ~ x, se = FALSE, colour="deepskyblue4", size=1) + 
+  stat_summary(aes(x = Year, y = Frequency), fun = sum, geom = "col", color="snow", fill="snow3") + 
+  labs(title = "Maximum winter temperatures", x = "Season (latter year)", y = "Daily values < 5th %-ile") + 
+  theme(text = element_text(size = 9, family = "Myriad Pro Condensed")) + 
+  theme(axis.title.x = element_text(vjust = -0.5), axis.title.y = element_text(vjust = 1.8)) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  theme(legend.position="none", plot.margin = margin(.4, .5, .4, .4, "cm")) + 
+  xlim(c(1955,2017)) + 
+  ylim(c(0,30)) + 
+  annotate(geom="text", x=1960, y=25, label="Total count = 246", family="Myriad Pro Condensed", size=3.5) + 
+  annotate(geom="text", x=1960, y=23, label="n = 60 yrs", family="Myriad Pro Condensed", size=3.5)
+
+r0time <- ggplot(data=r0, mapping = aes(x = Year, y = Frequency)) + 
+  geom_smooth(aes(group=1), method = "glm.nb", formula = y ~ x, se = FALSE, colour="snow", size=1.5) + 
+  geom_smooth(aes(group=1), method = "glm.nb", formula = y ~ x, se = FALSE, colour="deepskyblue4", size=0.75) + 
+  stat_summary(aes(x = Year, y = Frequency), fun = sum, geom = "col", color="snow", fill="snow3") + 
+  labs(title = "Maximum winter temperatures", x = "Season (latter year)", y = "Daily values < 5th %-ile") + 
+  theme(text = element_text(size = 7.5, family = "Myriad Pro Condensed")) + 
+  theme(axis.title.x = element_text(vjust = -0.5), axis.title.y = element_text(vjust = 1.8)) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  theme(legend.position="none", plot.margin = margin(.4, .5, .4, .4, "cm")) + 
+  xlim(c(1981,2017)) + 
+  ylim(c(0,25)) + 
+  annotate(geom="text", x=2013, y=22, label="Total count = 134", family="Myriad Pro Condensed", size=2.5) + 
+  annotate(geom="text", x=2013, y=20.5, label="n = 35 yrs", family="Myriad Pro Condensed", size=2.5)
+
+s0time <- ggplot(data=s0, mapping = aes(x = Year, y = Frequency)) + 
+  geom_smooth(aes(group=1), method = "glm.nb", formula = y ~ x, se = FALSE, colour="snow", size=1.5) + 
+  geom_smooth(aes(group=1), method = "glm.nb", formula = y ~ x, se = FALSE, colour="deepskyblue4", size=0.75) + 
+  stat_summary(aes(x = Year, y = Frequency), fun = sum, geom = "col", color="snow", fill="snow3") + 
+  labs(title = "Maximum winter temperatures", x = "Season (latter year)", y = "Daily values < 5th %-ile") + 
+  theme(text = element_text(size = 6, family = "Myriad Pro Condensed")) + 
+  theme(axis.title.x = element_text(vjust = -0.5), axis.title.y = element_text(vjust = 1.8)) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  theme(legend.position="none", plot.margin = margin(.4, .5, .4, .4, "cm")) + 
+  xlim(c(2004,2017)) + 
+  ylim(c(0,20)) + 
+  annotate(geom="text", x=2006, y=16, label="Total count = 64", family="Myriad Pro Condensed", size=2) + 
+  annotate(geom="text", x=2006, y=14.5, label="n = 12 yrs", family="Myriad Pro Condensed", size=2)
+
+u0time <- ggplot(data=u0, mapping = aes(x = Year, y = Frequency)) + 
+  geom_smooth(aes(group=1), method = "glm.nb", formula = y ~ x, se = FALSE, colour="snow", size=2) + 
+  geom_smooth(aes(group=1), method = "glm.nb", formula = y ~ x, se = FALSE, colour="lightseagreen", size=1) + 
+  stat_summary(aes(x = Year, y = Frequency), fun = sum, geom = "col", color="snow", fill="snow3") + 
+  labs(title = "Minimum winter temperatures", x = "Season (latter year)", y = "Daily values < 5th %-ile") + 
+  theme(text = element_text(size = 9, family = "Myriad Pro Condensed")) + 
+  theme(axis.title.x = element_text(vjust = -0.5), axis.title.y = element_text(vjust = 1.8)) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  theme(legend.position="none", plot.margin = margin(.4, .5, .4, .4, "cm")) + 
+  xlim(c(1955,2017)) + 
+  ylim(c(0,30)) + 
+  annotate(geom="text", x=1960, y=25, label="Total count = 275", family="Myriad Pro Condensed", size=3.5) + 
+  annotate(geom="text", x=1960, y=23, label="n = 60 yrs", family="Myriad Pro Condensed", size=3.5)
+
+w0time <- ggplot(data=w0, mapping = aes(x = Year, y = Frequency)) + 
+  geom_smooth(aes(group=1), method = "glm.nb", formula = y ~ x, se = FALSE, colour="snow", size=1.5) + 
+  geom_smooth(aes(group=1), method = "glm.nb", formula = y ~ x, se = FALSE, colour="lightseagreen", size=0.75) + 
+  stat_summary(aes(x = Year, y = Frequency), fun = sum, geom = "col", color="snow", fill="snow3") + 
+  labs(title = "Minimum winter temperatures", x = "Season (latter year)", y = "Daily values < 5th %-ile") + 
+  theme(text = element_text(size = 7.5, family = "Myriad Pro Condensed")) + 
+  theme(axis.title.x = element_text(vjust = -0.5), axis.title.y = element_text(vjust = 1.8)) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  theme(legend.position="none", plot.margin = margin(.4, .5, .4, .4, "cm")) + 
+  xlim(c(1981,2017)) + 
+  ylim(c(0,25)) + 
+  annotate(geom="text", x=2013, y=22, label="Total count = 173", family="Myriad Pro Condensed", size=2.5) + 
+  annotate(geom="text", x=2013, y=20.5, label="n = 35 yrs", family="Myriad Pro Condensed", size=2.5)
+
+z0time <- ggplot(data=z0, mapping = aes(x = Year, y = Frequency)) + 
+  geom_smooth(aes(group=1), method = "glm.nb", formula = y ~ x, se = FALSE, colour="snow", size=1.5) + 
+  geom_smooth(aes(group=1), method = "glm.nb", formula = y ~ x, se = FALSE, colour="lightseagreen", size=0.75) + 
+  stat_summary(aes(x = Year, y = Frequency), fun = sum, geom = "col", color="snow", fill="snow3") + 
+  labs(title = "Minimum winter temperatures", x = "Season (latter year)", y = "Daily values < 5th %-ile") + 
+  theme(text = element_text(size = 6, family = "Myriad Pro Condensed")) + 
+  theme(axis.title.x = element_text(vjust = -0.5), axis.title.y = element_text(vjust = 1.8)) + 
+  theme(panel.grid.major = element_line(size = 0.1, linetype = "dotted", colour = "azure4")) + 
+  theme(panel.grid.minor = element_blank(), panel.background = element_rect(fill="snow1")) + 
+  theme(legend.position="none", plot.margin = margin(.4, .5, .4, .4, "cm")) + 
+  xlim(c(2004,2017)) + 
+  ylim(c(0,20)) + 
+  annotate(geom="text", x=2006, y=16, label="Total count = 60", family="Myriad Pro Condensed", size=2) + 
+  annotate(geom="text", x=2006, y=14.5, label="n = 12 yrs", family="Myriad Pro Condensed", size=2)
+
+```
+
+<h5 style="text-align:center; font-size:16px">**Short-term residents** (2005&ndash;2016)</h5>
+```{r bin 3 bar plots, fig.height=4.5, fig.width= 6.5, fig.align='center', echo=FALSE, warning=FALSE}
+
+grid.arrange(c0time, f0time, s0time, z0time, nrow=2, ncol=2)
+
+```
+<br>
+
+<h5 style="text-align:center; font-size:16px">**Medium-term residents** (1982&ndash;2016)</h5>
+```{r bin 2 bar plots, fig.height = 5, fig.width = 9, fig.align='center', echo=FALSE, warning=FALSE}
+
+grid.arrange(b0time, e0time, r0time, w0time, nrow=2, ncol=2)
+
+```
+<br>
+
+<h5 style="text-align:center; font-size:16px">**Long-term residents** (1957&ndash;2016)</h5>
+```{r bin 1 bar plots, fig.height = 8, fig.width = 16, fig.align='center', echo = FALSE, warning=FALSE}
+
+grid.arrange(a0time, d0time, q0time, u0time, nrow=2, ncol=2)
+
+```
+<br>
+
+#### **Mann-Kendall trend test: Annual frequency of extreme climate**
+<p style="font-size:14px">In addition to overall climate trends, Mann-Kendall trend tests were used to perform a frequency analysis of climate extremes. Because of the parameters placed on the climate data, we can use the M-K test to more effectively determine if uncharacteristically intense climate events have increased or decreased in frequency over various timescales. For example, by testing these particular variables, we can observe how the hottest maximum temperatures have transpired, or whether the warmest winter days have become more common over time. As with the previous M-K tests, a Theil-Sen slope estimator was also applied to obtain the slope parameter. The basic `cor.test()` function from the `‘stats’` package was used to administer the trend test, while the slope estimate was obtained using `zyp.sen()` from the `‘zyp’` package.</p>
+```{r MK tests on extremes, include=FALSE}
+
+cor.test(a$Frequency, a$Year, method="kendall")
+zyp.sen(Year~Frequency, a)
+cor.test(b$Frequency, b$Year, method="kendall")
+zyp.sen(Year~Frequency, b)
+cor.test(c$Frequency, c$Year, method="kendall")
+zyp.sen(Year~Frequency, c)
+cor.test(d$Frequency, d$Year, method="kendall")
+zyp.sen(Year~Frequency, d)
+cor.test(e$Frequency, e$Year, method="kendall")
+zyp.sen(Year~Frequency, e)
+cor.test(f$Frequency, f$Year, method="kendall")
+zyp.sen(Year~Frequency, f)
+cor.test(q$Frequency, q$Year, method="kendall")
+zyp.sen(Year~Frequency, q)
+cor.test(r$Frequency, r$Year, method="kendall")
+zyp.sen(Year~Frequency, r)
+cor.test(s$Frequency, s$Year, method="kendall")
+zyp.sen(Year~Frequency, s)
+cor.test(u$Frequency, u$Year, method="kendall")
+zyp.sen(Year~Frequency, u)
+cor.test(w$Frequency, w$Year, method="kendall")
+zyp.sen(Year~Frequency, w)
+cor.test(z$Frequency, z$Year, method="kendall")
+zyp.sen(Year~Frequency, z)
+
+```
+```{r MK frequency table input, include=FALSE}
+
+short_extremesalt <- read_csv(file = '~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/summertemps/shortterm_extremes_alt1.csv')
+med_extremesalt <- read_csv(file = '~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/summertemps/medterm_extremes_alt1.csv')
+long_extremesalt <- read_csv(file = '~/Dropbox/_Summer 2020/ongoing research/knox clim study/634 papers shit/temperatureanalysis/summertemps/longterm_extremes_alt1.csv')
+
+```
+
+<h5 style="text-align:center; font-size:16px">**Short-term residents** (2005&ndash;2016)</h5>
+```{r bin 3 extremes table, echo = FALSE}
+
+library(dplyr)
+library(knitr)
+library(kableExtra)
+library(data.table)
+
+shortextalt12 <- data.table(short_extremesalt)
+opts <- options(knitr.kable.NA = "")
+shortextalt <- subset(shortextalt12, select = -c(X, bin, percentile))
+extr3alt <- shortextalt %>% filter(obs == c(65,59,64,60))
+
+kable(extr3alt, digits = c(3,3,3,4,2,2), align = "llllrr", col.names = c("Variable", "Kendall $\\tau$", "$p$ value", "Theil Sen slope", "$n$", "No. obs"), escape = FALSE) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed", "responsive", "hover"), font_size=13, full_width = F) %>%
+  pack_rows("Above 95th %-ile", 1, 2) %>%
+  pack_rows("Below 5th %-ile", 3, 4) %>%
+footnote(general = "Significance levels ( $p$ < * 0.05, ** 0.01, *** 0.001 or less) are provided.", general_title="", footnote_as_chunk = T)
+
+```
+<br>
+
+<h5 style="text-align:center; font-size:16px">**Medium-term residents** (1982&ndash;2016)</h5>
+```{r bin 2 extremes table, echo = FALSE}
+
+library(dplyr)
+library(knitr)
+library(kableExtra)
+library(data.table)
+
+medextalt12 <- data.table(med_extremesalt)
+opts <- options(knitr.kable.NA = "")
+medextalt <- subset(medextalt12, select = -c(X, bin, percentile))
+extr2alt <- medextalt %>% filter(obs == c(165,172,134,173))
+
+kable(extr2alt, digits = c(3,3,3,4,2,2), align = "llllrr", col.names = c("Variable", "Kendall $\\tau$", "$p$ value", "Theil Sen slope", "$n$", "No. obs"), escape = FALSE) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed", "responsive", "hover"), font_size=14, full_width = F) %>%
+  pack_rows("Above 95th %-ile", 1, 2) %>%
+  pack_rows("Below 5th %-ile", 3, 4) %>%
+footnote(general = "Significance levels ( $p$ < * 0.05, ** 0.01, *** 0.001 or less) are provided.", general_title="", footnote_as_chunk = T)
+
+```
+<br>
+
+<h5 style="text-align:center; font-size:16px">**Long-term residents** (1957&ndash;2016)</h5>
+```{r bin 1 extremes table, echo = FALSE}
+
+library(dplyr)
+library(knitr)
+library(kableExtra)
+library(data.table)
+
+longextalt12 <- data.table(long_extremesalt)
+opts <- options(knitr.kable.NA = "")
+extonealt <- subset(longextalt12, select = -c(X, bin, percentile))
+
+kable(extonealt, digits = c(3,3,3,4,2,2), align = "llllrr", col.names = c("Variable", "Kendall $\\tau$", "$p$ value", "Theil Sen slope", "$n$", "No. obs"), escape = FALSE) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed", "responsive", "hover"), font_size=14, full_width = F) %>%
+  pack_rows("Above 95th %-ile", 1, 2) %>%
+  pack_rows("Below 5th %-ile", 3, 4) %>%
+footnote(general = "Significance levels ( $p$ < * 0.05, ** 0.01, *** 0.001 or less) are provided.", general_title="", footnote_as_chunk = T)
+
+```
+<br>
+<blockquote style="font-size:15px; font-style:normal">
+<p><strong>Analyzing results:</strong></p>
+- How do extreme temperature/heat index events trend over time?
+- Overall, were there trends detected by bin? If so, what were they?
+- Were any of the trends statistically significant?
+- How great was the rate of change (slope) of the statistically significant trends that were detected?
+- In general, have extreme or unusually hot temperatures increased/decreased over period of residence?
+- Have cold temperatures been increasing/decreasing over the period of residence?
+</blockquote>
+
+<br><br><br><br>
+
+
+<p style="font-size:10px">#doneyalls</p>
